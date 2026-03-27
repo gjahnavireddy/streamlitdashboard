@@ -103,19 +103,34 @@ def insight(text, warn=False):
     cls = "warn-box" if warn else "insight-box"
     st.markdown(f'<div class="{cls}">{text}</div>', unsafe_allow_html=True)
 
+TICK_COLOR  = "#444441"
+AXIS_COLOR  = "#888780"
+
 def chart_layout(fig, height=300, legend=False, xgrid=False, ygrid=True):
     fig.update_layout(
         height=height,
         margin=dict(l=0, r=0, t=10, b=30),
-        plot_bgcolor="rgba(0,0,0,0)",
-        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="white",
+        paper_bgcolor="white",
         showlegend=legend,
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0, font=dict(size=11)) if legend else None,
-        font=dict(size=11, family="Arial"),
-        hoverlabel=dict(bgcolor="white", font_size=12),
+        legend=dict(
+            orientation="h", yanchor="bottom", y=1.02, x=0,
+            font=dict(size=11, color=TICK_COLOR),
+        ) if legend else None,
+        font=dict(size=11, family="Arial", color=TICK_COLOR),
+        hoverlabel=dict(bgcolor="white", font_size=12, font_color=TICK_COLOR),
     )
-    fig.update_xaxes(showgrid=xgrid, gridcolor="#f0f0f0", zeroline=False)
-    fig.update_yaxes(showgrid=ygrid, gridcolor="#f0f0f0", zeroline=False)
+    axis_style = dict(
+        showgrid=False,
+        gridcolor="#f0f0f0",
+        zeroline=False,
+        linecolor="#e5e5e5",
+        tickfont=dict(color=TICK_COLOR, size=11, family="Arial"),
+        title=dict(font=dict(color=AXIS_COLOR, size=11, family="Arial")),
+        automargin=True,
+    )
+    fig.update_xaxes(**axis_style, showgrid=xgrid)
+    fig.update_yaxes(**axis_style, showgrid=ygrid)
     return fig
 
 def wow(series, weeks):
@@ -193,13 +208,13 @@ df = load_data()
 with st.sidebar:
     st.markdown("### 📦 Marketplace Analytics")
     st.markdown("---")
-    page = st.radio("", [
+    page = st.radio("Navigation", [
         "🏠  Overview",
         "📈  Growth & Retention",
         "⭐  CX Quality",
         "🏪  Merchant Performance",
         "💰  Financial Health",
-    ])
+    ], label_visibility="collapsed")
     st.markdown("---")
     gran = st.selectbox("Time granularity", ["Weekly", "Daily"])
     gran_col = "week" if gran == "Weekly" else "date"
@@ -257,7 +272,7 @@ if "Overview" in page:
             fillcolor="rgba(108,99,255,0.08)",
             marker=dict(size=5),
         ))
-        st.plotly_chart(chart_layout(fig, 260), use_container_width=True)
+        st.plotly_chart(chart_layout(fig, 260), width="stretch")
 
     with col2:
         section_hd("Order status breakdown")
@@ -267,10 +282,11 @@ if "Overview" in page:
             hole=0.55,
             marker_colors=[TEAL, CORAL, AMBER],
             textinfo="label+percent",
-            textfont_size=11,
+            textfont=dict(size=11, color="#444441"),
         ))
         chart_layout(fig, 260)
-        st.plotly_chart(fig, use_container_width=True)
+        fig.update_layout(legend=dict(font=dict(color="#444441")))
+        st.plotly_chart(fig, width="stretch")
 
     insight("Use the sidebar to drill into each pillar. The four sections below answer: <b>Are we growing? Are customers happy? Which merchants are underperforming? Are we making money?</b>")
 
@@ -319,7 +335,7 @@ elif "Growth" in page:
         fig.add_bar(x=g[gran_col], y=g.get("New", 0),       name="New",       marker_color=TEAL)
         chart_layout(fig, 280, legend=True)
         fig.update_layout(barmode="stack")
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     with col2:
         section_hd("Order frequency distribution")
@@ -337,7 +353,7 @@ elif "Growth" in page:
         ))
         chart_layout(fig, 280, ygrid=False)
         fig.update_xaxes(visible=False)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     # Row 2: Cohort retention heatmap
     section_hd("Weekly cohort retention — % of cohort re-ordering each week after acquisition")
@@ -356,8 +372,8 @@ elif "Growth" in page:
         hovertemplate="Cohort: %{y}<br>%{x}: %{z:.1f}%<extra></extra>",
     ))
     chart_layout(fig, 400)
-    fig.update_layout(yaxis=dict(autorange="reversed"))
-    st.plotly_chart(fig, use_container_width=True)
+    fig.update_layout(yaxis=dict(autorange="reversed", tickfont=dict(color="#444441", size=10)))
+    st.plotly_chart(fig, width="stretch")
 
     # Row 3
     col1, col2 = st.columns([2, 3])
@@ -370,10 +386,10 @@ elif "Growth" in page:
         med  = gaps.median()
         fig  = go.Figure(go.Histogram(x=gaps.clip(upper=60), nbinsx=30, marker_color=PURPLE, opacity=0.85))
         fig.add_vline(x=med, line_dash="dash", line_color=AMBER,
-            annotation_text=f"Median: {med:.0f}d", annotation_position="top right")
+            annotation_text=f"Median: {med:.0f}d", annotation_font_color="#444441", annotation_position="top right")
         chart_layout(fig, 260)
-        fig.update_xaxes(title_text="Days (capped 60)")
-        st.plotly_chart(fig, use_container_width=True)
+        fig.update_xaxes(title=dict(text="Days (capped 60)", font=dict(color=AXIS_COLOR, size=11, family="Arial")))
+        st.plotly_chart(fig, width="stretch")
 
     with col2:
         section_hd("Cumulative user growth")
@@ -389,8 +405,8 @@ elif "Growth" in page:
             fillcolor="rgba(20,184,166,0.1)",
         ))
         chart_layout(fig, 260)
-        fig.update_yaxes(title_text="Cumulative users")
-        st.plotly_chart(fig, use_container_width=True)
+        fig.update_yaxes(title=dict(text="Cumulative users", font=dict(color=AXIS_COLOR, size=11, family="Arial")))
+        st.plotly_chart(fig, width="stretch")
 
     # Insights
     w4_ret = float(retention.iloc[:, 4].dropna().mean()) * 100 if retention.shape[1] > 4 else 0
@@ -415,7 +431,7 @@ elif "CX" in page:
     p90_delivery  = s["delivery_minutes"].quantile(0.9)
     multi_attempt = (dff["Delivery Attempts"] > 1).mean()
 
-    w_cancel = dff.groupby("week").apply(lambda x: (x["Order Status"] != "Successful").mean())
+    w_cancel = dff.groupby("week").apply(lambda x: (x["Order Status"] != "Successful").mean(), include_groups=False)
     w_nps    = s.groupby("week")["NPS"].mean()
 
     cols = st.columns(5)
@@ -445,7 +461,7 @@ elif "CX" in page:
             textposition="outside",
         ))
         chart_layout(fig, 260, ygrid=False)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     with col2:
         section_hd("Cancellation reasons")
@@ -459,7 +475,7 @@ elif "CX" in page:
         ))
         chart_layout(fig, 260, ygrid=False)
         fig.update_xaxes(visible=False)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     # Row 2
     col1, col2 = st.columns(2)
@@ -470,12 +486,12 @@ elif "CX" in page:
             marker_color=PURPLE, opacity=0.85,
         ))
         fig.add_vline(x=med_delivery, line_dash="dash", line_color=AMBER,
-            annotation_text=f"Median: {med_delivery:.0f}m", annotation_position="top right")
+            annotation_text=f"Median: {med_delivery:.0f}m", annotation_font_color="#444441", annotation_position="top right")
         fig.add_vline(x=p90_delivery, line_dash="dot", line_color=CORAL,
-            annotation_text=f"P90: {p90_delivery:.0f}m", annotation_position="top left")
+            annotation_text=f"P90: {p90_delivery:.0f}m", annotation_font_color="#444441", annotation_position="top left")
         chart_layout(fig, 280)
-        fig.update_xaxes(title_text="Minutes (capped at 90)")
-        st.plotly_chart(fig, use_container_width=True)
+        fig.update_xaxes(title=dict(text="Minutes (capped at 90)", font=dict(color=AXIS_COLOR, size=11, family="Arial")))
+        st.plotly_chart(fig, width="stretch")
 
     with col2:
         section_hd("NPS trend over time")
@@ -486,11 +502,11 @@ elif "CX" in page:
             mode="lines+markers",
             line=dict(color=TEAL, width=2.5), marker=dict(size=6),
         ))
-        fig.add_hrule(y=7, line_dash="dash", line_color=AMBER,
+        fig.add_hline(y=7, line_dash="dash", line_color=AMBER,
             annotation_text="Promoter threshold (7)", annotation_position="bottom right")
         chart_layout(fig, 280)
         fig.update_yaxes(range=[5, 10])
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     # Row 3: NPS by merchant (flag outliers)
     section_hd("NPS by merchant — flagging underperformers")
@@ -503,10 +519,10 @@ elif "CX" in page:
         text=[f"{v:.1f}" for v in ms["Avg NPS"]],
         textposition="outside",
     ))
-    fig.add_vline(x=7, line_dash="dash", line_color=AMBER, annotation_text="Promoter threshold")
+    fig.add_vline(x=7, line_dash="dash", line_color=AMBER, annotation_text="Promoter threshold", annotation_font_color="#444441")
     chart_layout(fig, 380, ygrid=False)
     fig.update_xaxes(range=[0, 11])
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
     low_nps = ms[ms["Avg NPS"] < 7]["Merchant"].tolist()
     insight(
@@ -555,7 +571,7 @@ elif "Merchant" in page:
         chart_layout(fig, 300, ygrid=False)
         fig.update_xaxes(tickangle=-35)
         fig.update_yaxes(visible=False)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     with col2:
         section_hd("Cancel rate vs. avg NPS — bubble = order volume")
@@ -576,9 +592,9 @@ elif "Merchant" in page:
             hovertemplate="<b>%{text}</b><br>Cancel rate: %{x:.1f}%<br>Avg NPS: %{y:.1f}<extra></extra>",
         ))
         chart_layout(fig, 300)
-        fig.update_xaxes(title_text="Cancellation rate (%)")
-        fig.update_yaxes(title_text="Avg NPS", range=[4, 10])
-        st.plotly_chart(fig, use_container_width=True)
+        fig.update_xaxes(title=dict(text="Cancellation rate (%)", font=dict(color=AXIS_COLOR, size=11, family="Arial")))
+        fig.update_yaxes(title=dict(text="Avg NPS", font=dict(color=AXIS_COLOR, size=11, family="Arial")), range=[4, 10])
+        st.plotly_chart(fig, width="stretch")
 
     # Row 2
     col1, col2 = st.columns(2)
@@ -597,7 +613,7 @@ elif "Merchant" in page:
             annotation_text=f"Site median ({site_median:.0f}m)")
         chart_layout(fig, 380, ygrid=False)
         fig.update_xaxes(visible=False)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     with col2:
         section_hd("Cancellation rate by merchant")
@@ -614,7 +630,7 @@ elif "Merchant" in page:
             annotation_text=f"Site avg ({site_cancel:.1%})")
         chart_layout(fig, 380, ygrid=False)
         fig.update_xaxes(visible=False)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     # Scorecard
     section_hd("Full merchant scorecard")
@@ -682,7 +698,7 @@ elif "Financial" in page:
         fig.add_scatter(x=weekly["week"], y=weekly["net"], mode="lines+markers",
             name="Net revenue", line=dict(color=TEAL, width=2.5), marker=dict(size=6))
         chart_layout(fig, 300, legend=True)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     with col2:
         section_hd("Net revenue vs. promo cost — weekly waterfall")
@@ -695,7 +711,7 @@ elif "Financial" in page:
             name="Promo spend", marker_color=CORAL)
         chart_layout(fig, 300, legend=True)
         fig.update_layout(barmode="relative")
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     # Row 2
     col1, col2 = st.columns(2)
@@ -712,7 +728,7 @@ elif "Financial" in page:
         fig.add_bar(x=tiers["label"], y=tiers["net"], name="Net revenue", marker_color=TEAL)
         chart_layout(fig, 280, legend=True)
         fig.update_layout(barmode="group")
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     with col2:
         section_hd("Order value distribution")
@@ -721,10 +737,10 @@ elif "Financial" in page:
             marker_color=PURPLE, opacity=0.85,
         ))
         fig.add_vline(x=avg_order_val, line_dash="dash", line_color=AMBER,
-            annotation_text=f"Mean: ${avg_order_val:.2f}", annotation_position="top right")
+            annotation_text=f"Mean: ${avg_order_val:.2f}", annotation_font_color="#444441", annotation_position="top right")
         chart_layout(fig, 280)
-        fig.update_xaxes(title_text="Order subtotal ($)")
-        st.plotly_chart(fig, use_container_width=True)
+        fig.update_xaxes(title=dict(text="Order subtotal ($)", font=dict(color=AXIS_COLOR, size=11, family="Arial")))
+        st.plotly_chart(fig, width="stretch")
 
     # Row 3: GMV by merchant
     section_hd("Net revenue contribution by merchant")
@@ -737,7 +753,7 @@ elif "Financial" in page:
         textposition="outside", name="Net revenue", secondary_y=False)
     chart_layout(fig, 400, ygrid=False)
     fig.update_xaxes(visible=False)
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
     promo_ratio = total_promo / total_net
     insight(
