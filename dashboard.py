@@ -120,8 +120,7 @@ def chart_layout(fig, height=300, legend=False, xgrid=False, ygrid=True):
         font=dict(size=11, family="Arial", color=TICK_COLOR),
         hoverlabel=dict(bgcolor="white", font_size=12, font_color=TICK_COLOR),
     )
-    axis_style = dict(
-        showgrid=False,
+    axis_base = dict(
         gridcolor="#f0f0f0",
         zeroline=False,
         linecolor="#e5e5e5",
@@ -129,8 +128,8 @@ def chart_layout(fig, height=300, legend=False, xgrid=False, ygrid=True):
         title=dict(font=dict(color=AXIS_COLOR, size=11, family="Arial")),
         automargin=True,
     )
-    fig.update_xaxes(**axis_style, showgrid=xgrid)
-    fig.update_yaxes(**axis_style, showgrid=ygrid)
+    fig.update_xaxes(**axis_base, showgrid=xgrid)
+    fig.update_yaxes(**axis_base, showgrid=ygrid)
     return fig
 
 def wow(series, weeks):
